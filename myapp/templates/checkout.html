@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Capture</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css">
+    <style>
+        img {
+            height: 75px;
+            width: 175px;
+            object-fit: contain;
+        }
+        .full-height {
+            height: 100vh;
+        }
+        .is-centered-vertically {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .video-container {
+            border: 5px solid #00d1b2; /* Bulma primary color */
+            border-radius: 10px;
+            padding: 10px;
+            display: inline-block;
+        }
+        .table-container {
+            max-height: 77vh; /* Adjust as needed */
+            overflow-y: auto;
+            position: relative;
+        }
+        .table-container thead,
+        .table-container tfoot {
+            position: sticky;
+            z-index: 2;
+            background: inherit;
+        }
+        .table-container thead {
+            top: 0;
+        }
+        .table-container tfoot {
+            bottom: 0;
+        }
+        .table-container th {
+            padding-left: 10px !important;
+            padding-right: 10px !important;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar is-transparent">
+        <div class="navbar-burger js-burger" data-target="navbarExampleTransparentExample">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+
+      <div id="navbarExampleTransparentExample" class="navbar-menu">
+        <div class="navbar-start">
+          <a class="navbar-item" href="{% url 'index' %}"> Home </a>
+          <a class="navbar-item" href="{% url 'inventory' %}"> Inventory </a>
+        </div>
+
+        <div class="navbar-end">
+          <div class="navbar-item">
+            <div class="field is-grouped">
+              <p class="control">
+                <a class="button is-primary" href="{% url 'capture_image' %}">
+                  <span>Capture</span>
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <section class="section full-height">
+        <div class="container">
+            <div class="columns is-centered full-height">
+                <div class="column">
+                    <div class="box">
+                        <div class="content has-text-centered">
+                                <table class="table is-striped is-hoverable is-fullwidth">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Quantity</th>
+                                            <th>Unit Price</th>
+                                            <th>Total Price</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="itemList">
+                                        {% for item in items %}
+                                            <tr>
+                                                <td>{{ item.product_name }}</td>
+                                                <td>{{ item.quantity }}</td>
+                                                <td>{{ item.unit_price }}</td>
+                                                <td>{{ item.price }}</td>
+                                                <td></td>
+                                            </tr>
+                                        {% endfor %}
+                                        {% if status == "empty" %}
+                                            <tr><th colspan="7">
+                                                <br>
+                                                <br>
+                                                <h1>No Items in Cart</h1>
+                                                <br>
+                                                <br>
+                                            </th></tr>
+                                        {% endif %}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr id="totalPrice" >
+                                            <th colspan="3"><br>Total Price: </th>
+                                            <th colspan="1"><br>{{ total }}</th>
+                                            <th>
+                                                <form method="post">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="button is-success mt-4">Confirm Checkout</button>
+                                                </form>
+                                            </th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>

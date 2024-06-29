@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classification Result</title>
+</head>
+<body>
+    <h1>Classification Result</h1>
+    <p>Output Class: {{ classification }}</p>
+
+    <h2>Correct the Classification</h2>
+    <form method="POST" action="{% url 'correct_class' image_id %}">
+        {% csrf_token %}
+        <label for="corrected_class">Corrected Class:</label>
+        <input type="text" id="corrected_class" name="corrected_class">
+        <button type="submit">Submit</button>
+    </form>
+    
+    <a href="{% url 'capture_image' %}">Capture Another Image</a>
+</body>
+</html>
+

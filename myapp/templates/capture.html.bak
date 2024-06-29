@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capture Image</title>
+    <style>
+        #camera {
+            width: 100%;
+            height: auto;
+        }
+        .image-item {
+            margin-bottom: 15px;
+        }
+        .image-item img {
+            max-width: 100px;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Capture and Classify Image</h1>
+    <video id="camera" autoplay></video>
+    <button id="captureButton">Capture</button>
+    <canvas id="snapshot" style="display: none;"></canvas>
+    <form id="uploadForm" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" id="imageInput" name="image" style="display: none;">
+    </form>
+    <div id="imageList">
+        <h2>Previously Classified Images</h2>
+        {% for image in images %}
+            <div class="image-item">
+                <img src="{{ image.image.url }}" alt="Image">
+                <p>Class: {{ image.output_class }}</p>
+            </div>
+        {% endfor %}
+    </div>
+    <script>
+        const video = document.getElementById('camera');
+        const captureButton = document.getElementById('captureButton');
+        const canvas = document.getElementById('snapshot');
+        const uploadForm = document.getElementById('uploadForm');
+        const imageInput = document.getElementById('imageInput');
+        const imageList = document.getElementById('imageList');
+
+        // Function to get the CSRF token from the cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        const csrftoken = getCookie('csrftoken');
+
+        // Access the device camera and stream to the video element
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                console.error('Error accessing the camera: ' + err);
+            });
+
+        // Capture the image when the capture button is clicked
+        captureButton.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob(blob => {
+                const file = new File([blob], 'capture.png', { type: 'image/png' });
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                imageInput.files = dataTransfer.files;
+
+                const formData = new FormData(uploadForm);
+                formData.append('image', file);
+
+                fetch(uploadForm.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const newImageItem = document.createElement('div');
+                    newImageItem.classList.add('image-item');
+                    newImageItem.innerHTML = `
+                        <img src="${data.image_url}" alt="Image">
+                        <p>Class: ${data.output_class}</p>
+                    `;
+                    imageList.insertAdjacentElement('afterbegin', newImageItem);
+                })
+                .catch(error => console.error('Error:', error));
+            }, 'image/png');
+        });
+    </script>
+</body>
+</html>

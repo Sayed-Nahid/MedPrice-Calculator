@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classification Corrected</title>
+</head>
+<body>
+    <h1>Classification Corrected</h1>
+    <p>Image: <img src="{{ classification.image.url }}" alt="Image"></p>
+    <p>Original Output Class: {{ classification.output_class }}</p>
+    <p>Corrected Class: {{ classification.corrected_class }}</p>
+    
+    <a href="{% url 'capture_image' %}">Capture Another Image</a>
+</body>
+</html>
+

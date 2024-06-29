@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Shopping Cart</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Update quantity
+            $('.update-quantity').on('change', function() {
+                const itemId = $(this).data('id');
+                const quantity = $(this).val();
+                $.ajax({
+                    url: `/cart/update/${itemId}/`,
+                    type: 'POST',
+                    data: {
+                        quantity: quantity,
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            location.reload(); // Refresh the cart details (you can also update the DOM elements instead)
+                        }
+                    }
+                });
+            });
+
+            // Remove item
+            $('.remove-item').on('click', function() {
+                const itemId = $(this).data('id');
+                $.ajax({
+                    url: `/cart/remove/${itemId}/`,
+                    type: 'POST',
+                    data: {
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            location.reload(); // Refresh the cart details (you can also update the DOM elements instead)
+                        }
+                    }
+                });
+            });
+
+            // Checkout
+            $('#checkout').on('click', function() {
+                $.ajax({
+                    url: `/checkout/`,
+                    type: 'POST',
+                    data: {
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Checkout successful!');
+                            location.reload(); // Redirect or update the DOM as needed
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>Shopping Cart</h1>
+    <ul>
+        {% for item in cart.items.all %}
+            <li>
+                {{ item.product.name }} - 
+                <input type="number" class="update-quantity" data-id="{{ item.id }}" value="{{ item.quantity }}">
+                x ${{ item.product.price }} = ${{ item.total_price }}
+                <button class="remove-item" data-id="{{ item.id }}">Remove</button>
+            </li>
+        {% endfor %}
+    </ul>
+    <h2>Total: ${{ cart.items.all|sum:'total_price' }}</h2>
+    <button id="checkout">Checkout</button>
+</body>
+</html>

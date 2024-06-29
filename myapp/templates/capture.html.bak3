@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Feed</title>
+</head>
+<body>
+    <h1>Camera Feed</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+
+    <!-- Form to submit the image -->
+    <form id="imageForm" method="POST" action="/upload/" enctype="multipart/form-data">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+        <button type="button" id="captureBtn">Capture</button>
+        <p id="errorMsg"></p>
+        <ul id="cartItemsList"></ul>
+        <input type="submit" style="display:none;">
+    </form>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const errorMsgElement = document.getElementById('errorMsg');
+        const cartItemsList = document.getElementById('cartItemsList');
+        const imageForm = document.getElementById('imageForm');
+
+        const constraints = {
+            video: true
+        };
+
+        async function init() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                handleSuccess(stream);
+            } catch (e) {
+                handleError(e);
+            }
+        }
+
+        function handleSuccess(stream) {
+            video.srcObject = stream;
+        }
+
+        function handleError(error) {
+            console.error('Error accessing the camera: ', error);
+            errorMsgElement.innerHTML = `Error accessing the camera: ${error.name}`;
+        }
+
+        captureBtn.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob((blob) => {
+                const file = new File([blob], 'captured_image.png', { type: 'image/png' });
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+                // Submit the form
+                submitForm(formData);
+            }, 'image/png');
+        });
+
+        function submitForm(formData) {
+            // Add form data to the form
+            for (var pair of formData.entries()) {
+                imageForm.append(pair[0], pair[1]);
+            }
+
+            // Submit the form
+            imageForm.submit();
+        }
+
+        function fetchCartItems() {
+            const xhr = new XMLHttpRequest();
+
+            xhr.open('GET', '/get_cart_items/', true);
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    const cartItems = JSON.parse(xhr.responseText);
+                    updateCartItemsList(cartItems);
+                } else if (xhr.readyState === 4) {
+                    console.error('Error fetching cart items');
+                }
+            };
+
+            xhr.send();
+        }
+
+        function updateCartItemsList(cartItems) {
+            cartItemsList.innerHTML = ''; // Clear the existing list
+            cartItems.forEach(item => {
+                const listItem = document.createElement('li');
+                listItem.textContent = item.name + ': ' + item.quantity;
+                cartItemsList.appendChild(listItem);
+            });
+        }
+
+        init();
+
+        init();
+    </script>
+</body>
+</html>
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Feed</title>
+</head>
+<body>
+    <h1>Camera Feed</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <button id="captureBtn">Capture</button>
+    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+    <p id="errorMsg"></p>
+    <ul id="cartItemsList"></ul>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const errorMsgElement = document.getElementById('errorMsg');
+        const cartItemsList = document.getElementById('cartItemsList');
+
+        const constraints = {
+            video: true
+        };
+
+        async function init() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                handleSuccess(stream);
+            } catch (e) {
+                handleError(e);
+            }
+        }
+
+        function handleSuccess(stream) {
+            video.srcObject = stream;
+        }
+
+        function handleError(error) {
+            console.error('Error accessing the camera: ', error);
+            errorMsgElement.innerHTML = `Error accessing the camera: ${error.name}`;
+        }
+
+        captureBtn.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob((blob) => {
+                sendImageData(blob);
+            }, 'image/png');
+        });
+
+        function sendImageData(blob) {
+            const formData = new FormData();
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            formData.append('image', blob, 'captured_image.png');
+            formData.append('csrfmiddlewaretoken', csrfToken);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/capture/', true);
+
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    console.log('Image uploaded successfully');
+                    fetchCartItems();
+                } else if (xhr.readyState === 4) {
+                    console.error('Error uploading image');
+                }
+            };
+
+            xhr.send(formData);
+        }
+
+        function fetchCartItems() {
+            const xhr = new XMLHttpRequest();
+
+            xhr.open('GET', '/get_cart_items/', true);
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    const cartItems = JSON.parse(xhr.responseText);
+                    updateCartItemsList(cartItems);
+                } else if (xhr.readyState === 4) {
+                    console.error('Error fetching cart items');
+                }
+            };
+
+            xhr.send();
+        }
+
+        function updateCartItemsList(cartItems) {
+            cartItemsList.innerHTML = ''; // Clear the existing list
+            cartItems.forEach(item => {
+                const listItem = document.createElement('li');
+                listItem.textContent = item.name + ': ' + item.quantity;
+                cartItemsList.appendChild(listItem);
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>

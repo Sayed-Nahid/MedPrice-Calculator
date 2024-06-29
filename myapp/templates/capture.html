@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Capture</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css">
+    <style>
+        img {
+            height: 75px;
+            width: 175px;
+            object-fit: contain;
+        }
+        .full-height {
+            height: 100vh;
+        }
+        .is-centered-vertically {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .video-container {
+            border: 5px solid #00d1b2; /* Bulma primary color */
+            border-radius: 10px;
+            padding: 10px;
+            display: inline-block;
+        }
+        .table-container {
+            max-height: 77vh; /* Adjust as needed */
+            overflow-y: auto;
+            position: relative;
+        }
+        .table-container thead,
+        .table-container tfoot {
+            position: sticky;
+            z-index: 2;
+            background: inherit;
+        }
+        .table-container thead {
+            top: 0;
+        }
+        .table-container tfoot {
+            bottom: 0;
+        }
+        .table-container th {
+            padding-left: 10px !important;
+            padding-right: 10px !important;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar is-transparent">
+        <div class="navbar-burger js-burger" data-target="navbarExampleTransparentExample">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+
+      <div id="navbarExampleTransparentExample" class="navbar-menu">
+        <div class="navbar-start">
+          <a class="navbar-item" href="{% url 'index'%}"> Home </a>
+          <a class="navbar-item" href="{% url 'inventory' %}"> Inventory </a>
+        </div>
+
+        <div class="navbar-end">
+          <div class="navbar-item">
+            <div class="field is-grouped">
+              <p class="control">
+                <a class="button is-primary" href="{% url 'capture_image' %}">
+                  <span>Capture</span>
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <section class="section full-height">
+        <div class="container">
+            <div class="columns is-centered full-height">
+                <div class="column is-one-third is-centered-vertically">
+                    <div class="box">
+                        <div class="content has-text-centered">
+                            <div class="video-container">
+                                <video id="videoFeed" width="100%" autoplay></video>
+                            </div>
+                            <button class="button is-primary is-fullwidth mt-4" id="captureButton">Capture</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-two-third">
+                    <div class="box">
+                        <div class="content has-text-centered">
+                            <div class="table-container">
+                                <table class="table is-striped is-hoverable is-fullwidth">
+                                    <thead>
+                                        <tr>
+                                            <th>Image</th>
+                                            <th>Name</th>
+                                            <th>In Stock</th>
+                                            <th>Quantity</th>
+                                            <th>Unit Price</th>
+                                            <th>Total Price</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="itemList">
+                                        {% for item in items %}
+                                            <tr>
+                                                <td>
+                                                    <img src="{{ item.image_url }}">
+                                                </td>
+                                                <td>{{ item.product_name }}</td>
+                                                <td>{{ item.quantity_in_stock }}</td>
+                                                <td>{{ item.quantity }}</td>
+                                                <td>{{ item.unit_price }}</td>
+                                                <td>{{ item.price }}</td>
+                                                <td><button class="button is-error delete-cart-item-button" data-cart-item-id="{{ item.id }}">Delete</button></td>
+                                            </tr>
+                                        {% endfor %}
+                                        {% if status == "empty" %}
+                                            <tr><th colspan="7">
+                                                <br>
+                                                <br>
+                                                <br>
+                                                <br>
+                                                <br>
+                                                <br>
+                                                <br>
+                                                <br>
+                                                <h1>No Items in Cart</h1>
+                                                <br>
+                                                <br>
+                                                <br>
+                                                <br>
+                                                <br>
+                                                <br>
+                                                <br>
+                                                <br>
+                                            </th></tr>
+                                        {% endif %}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr id="totalPrice" >
+                                            <th colspan="4"><br>Total Price: </th>
+                                            <th colspan="2"><br>{{ total }}</th>
+                                            <th>
+                                                <a href="{% url 'checkout' %}">
+                                                    <button class="button is-success mt-4">Checkout</button>
+                                                </a>
+                                            </th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Function to get the CSRF token from the cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function deleteCartItem(id) {
+            $.ajax({
+                type: 'POST',
+                url: '/delete_cart_item/' + id + '/', // Construct the URL with the id
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'), // Include CSRF token from cookie
+                },
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    console.log('Raw response:', response); // Log the raw response
+                    
+                    try {
+                        $('#itemList').empty();
+                        response.data.forEach(function(item) {
+                            $('#itemList').append('<tr>' + 
+                                                      '<td>' + 
+                                                          '<img src="' + item.image_url + '">' + 
+                                                      '</td>' + 
+                                                      '<td>' + item.product_name + '</td>' + 
+                                                      '<td>' + item.quantity_in_stock + '</td>' + 
+                                                      '<td>' + item.quantity + '</td>' + 
+                                                      '<td>' + item.unit_price + '</td>' + 
+                                                      '<td>' + item.price + '</td>' + 
+                                                      '<td><button class="button is-error delete-cart-item-button" data-cart-item-id="' + item.id + '">Delete</button></td>' + 
+                                                  '</tr>');
+                        });
+                        $('#totalPrice').empty();
+                        $('#totalPrice').append('<th colspan="4"><br>Total Price: </th>' + 
+                                                '<th colspan="2"><br>' + response.total + '</th>' + 
+                                                '<th><a href="{% url "checkout" %}"><button class="button is-success mt-4">Checkout</button></a></th>'
+                                              );
+                        document.querySelectorAll('.delete-cart-item-button').forEach(function(button) {
+                            button.addEventListener('click', function() {
+                                var id = this.getAttribute('data-cart-item-id'); // Get the id from data attribute
+                                deleteCartItem(id);
+                            });
+                        });
+                    } catch (error) {
+                        console.error('Error parsing JSON:', error);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error:', error);
+                }
+            });
+        }
+
+        document.querySelectorAll('.delete-cart-item-button').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var id = this.getAttribute('data-cart-item-id'); // Get the id from data attribute
+                deleteCartItem(id);
+            });
+        });
+
+        $(document).ready(function() {
+            var videoConstraints = {
+                video: {
+                    facingMode: 'environment'  // Use the back camera if available
+                }
+            };
+
+            // Access video stream
+            navigator.mediaDevices.getUserMedia(videoConstraints)
+                .then(function(stream) {
+                    var video = document.getElementById('videoFeed');
+                    video.srcObject = stream;
+                })
+                .catch(function(err) {
+                    console.error('Error accessing video stream: ', err);
+                });
+
+            // Capture button click event
+            $('#captureButton').click(function() {
+                var canvas = document.createElement('canvas');
+                var video = document.getElementById('videoFeed');
+                var context = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                canvas.toBlob(function(blob) {
+                    var formData = new FormData();
+                    formData.append('image', blob, 'image.jpg');
+
+                    // AJAX POST request to Django backend
+                    $.ajax({
+                        type: 'POST',
+                        url: '/capture/', // Replace with your actual URL
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken'), // Include CSRF token from cookie
+                        },
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            console.log('Raw response:', response); // Log the raw response
+                            
+                            try {
+                                $('#itemList').empty();
+                                response.data.forEach(function(item) {
+                                    $('#itemList').append( '<tr>'  + 
+                                                              '<td>' + 
+                                                                  '<img src="' + item.image_url + '">' + 
+                                                              '</td>' + 
+                                                              '<td>' + item.product_name + '</td>' + 
+                                                              '<td>' + item.quantity_in_stock + '</td>' + 
+                                                              '<td>' + item.quantity + '</td>' + 
+                                                              '<td>' + item.unit_price + '</td>' + 
+                                                              '<td>' + item.price + '</td>' + 
+                                                              '<td><button class="button is-error delete-cart-item-button" data-cart-item-id="' + item.id + '">Delete</button></td>' + 
+                                                           '</tr>');
+                                });
+                                $('#totalPrice').empty();
+                                $('#totalPrice').append('<th colspan="4"><br>Total Price: </th>' + 
+                                                        '<th colspan="2"><br>' + response.total + '</th>' + 
+                                                        '<th><a href="{% url "checkout" %}"><button class="button is-success mt-4">Checkout</button></a></th>'
+                                                      );
+                                document.querySelectorAll('.delete-cart-item-button').forEach(function(button) {
+                                    button.addEventListener('click', function() {
+                                        var id = this.getAttribute('data-cart-item-id'); // Get the id from data attribute
+                                        deleteCartItem(id);
+                                    });
+                                });
+                            } catch (error) {
+                                console.error('Error parsing JSON:', error);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Error:', error);
+                        }
+                    });
+                }, 'image/jpeg');
+            });
+        });
+    </script>
+</body>
+</html>
