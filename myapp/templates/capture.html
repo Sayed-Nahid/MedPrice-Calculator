@@ -4,13 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Capture</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@400..800&display=swap" rel="stylesheet">
     <style>
+        body, html {
+            font-family: "Baloo Da 2", sans-serif !important;
+            font-optical-sizing: auto;
+            font-style: normal;
+        }
         img {
-            height: 75px;
-            width: 175px;
-            object-fit: contain;
+            height: auto !important;
+            max-width: 25% !important;
+            object-fit: contain !important;
         }
         .full-height {
             height: 100vh;
@@ -47,9 +56,13 @@
             padding-left: 10px !important;
             padding-right: 10px !important;
         }
+        td {
+            max-width: 200px;
+        }
     </style>
 </head>
 <body>
+    {% csrf_token %}
     <nav class="navbar is-transparent">
         <div class="navbar-burger js-burger" data-target="navbarExampleTransparentExample">
           <span></span>
@@ -61,8 +74,8 @@
 
       <div id="navbarExampleTransparentExample" class="navbar-menu">
         <div class="navbar-start">
-          <a class="navbar-item" href="{% url 'index'%}"> Home </a>
-          <a class="navbar-item" href="{% url 'inventory' %}"> Inventory </a>
+          <a class="navbar-item" href="{% url 'index'%}"> <span class="icon-text"> <span clss="icon"><i class="fa-solid fa-house"></i> </span><span> Home</span></span></a>
+          <a class="navbar-item" href="{% url 'inventory' %}"> <span class="icon-text"> <span clss="icon"><i class="fa-solid fa-warehouse"></i> </span><span> Inventory</span></span> </a>
         </div>
 
         <div class="navbar-end">
@@ -70,7 +83,7 @@
             <div class="field is-grouped">
               <p class="control">
                 <a class="button is-primary" href="{% url 'capture_image' %}">
-                  <span>Capture</span>
+                  <span class="icon-text"> <span clss="icon"><i class="fa-solid fa-video"></i> </span><span> Capture</span></span>
                 </a>
               </p>
             </div>
@@ -88,7 +101,9 @@
                             <div class="video-container">
                                 <video id="videoFeed" width="100%" autoplay></video>
                             </div>
-                            <button class="button is-primary is-fullwidth mt-4" id="captureButton">Capture</button>
+                            <button class="button is-primary is-fullwidth mt-4" id="captureButton">
+                                <span class="icon-text"> <span clss="icon"><i class="fa-solid fa-video"></i> </span><span> Capture</span></span>
+                            </button>
                         </div>
                     </div>
                 </div>
