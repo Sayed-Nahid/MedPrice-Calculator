@@ -1,4 +1,4 @@
-# Automatic-Billing-System
+# MedPrice Calculator(Automatic-Billing-System)
 
 `python -m venv venv`
 
